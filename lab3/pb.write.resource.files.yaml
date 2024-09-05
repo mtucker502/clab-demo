@@ -1,0 +1,22 @@
+# ---
+# - name: Test
+#   hosts: clab-lab3/ansible-inventory.yml
+#   connection: local
+#   - 
+
+---
+- name: Print Inventory Hosts
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: create resource file
+      template:
+        src: test/templates/resourses.txt.j2
+        dest: test/resource_files/resources.txt
+      delegate_to: localhost
+
+    - name: create robot file
+      template:
+        src: test/templates/example.robot.j2
+        dest: test/tests/example.robot
+      delegate_to: localhost

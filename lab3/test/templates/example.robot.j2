@@ -1,0 +1,48 @@
+#jinja2:lstrip_blocks: True
+## ********************************************************
+##
+## Project: nita
+##
+## Copyright (c) Juniper Networks, Inc., 2024. All rights reserved.
+##
+## Notice and Disclaimer: This code is licensed to you under the Apache 2.0 License (the "License"). You may not use this code except in compliance with the License. This code is not an official Juniper product. You can obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0.html
+##
+## SPDX-License-Identifier: Apache-2.0
+##
+## Third-Party Code: This code may depend on other components under separate copyright notice and license terms. Your use of the source code for those components is subject to the terms and conditions of the respective license as noted in the Third-Party source code file.
+##
+## ********************************************************
+*** Settings ***
+Documentation     cRPD Test Cases
+
+Resource	${EXECDIR}/resource_files/resources.txt
+Resource	${JUNIPER_COMMON}/resource_files/connectivity_resources.txt
+Resource	${JUNIPER_COMMON}/resource_files/device_resources.txt
+
+Suite Setup    clab Setup
+Suite Teardown    clab Teardown
+
+*** Variables ***
+
+${output_directory}=	${CURDIR}
+${path}=	${CURDIR}
+
+*** Keywords ***
+clab Setup
+    Set Suite Variable    @{devices}
+	{% for device in ansible_play_hosts_all %}
+	    ...    {{ device | replace("-", "_") }}
+	{% endfor %}
+	Device Open Connection	@{devices}
+
+clab Teardown
+	Device Close Connection	@{devices}
+
+*** Test Cases ***
+Gather Test Variables
+	Log Variables
+
+Verify Configuration
+	FOR    ${dut}    IN    @{devices}
+	    Get configuration    ${dut}
+	END

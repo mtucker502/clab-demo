@@ -1,0 +1,45 @@
+name: lab3
+
+topology:
+  nodes:
+    crpd1:
+      kind: crpd
+      publish:
+        - tcp/50051
+      image: crpd:latest
+      startup-config: crpd.conf
+      license: license.txt
+      exec:
+        - ip addr add 100.64.0.1/30 dev eth1
+        - ip addr add 1.1.1.1/32 dev lo
+        - ip addr add 100.64.1.1/24 dev eth2
+    crpd2:
+      kind: crpd
+      image: crpd:latest
+      startup-config: crpd.conf
+      license: license.txt
+      exec:
+        - ip addr add 100.64.0.2/30 dev eth1
+        - ip addr add 2.2.2.2/32 dev lo
+        - ip link add eth2 type veth
+        - ip addr add 100.64.2.1/24 dev eth2
+    # user1:
+    #   kind: linux
+    #   image: alpine:latest
+    #   exec:
+    #     - ip addr add 100.64.1.2/24 dev eth1
+    #     - ip route delete default
+    #     - ip route add default via 100.64.1.1
+    # user2:
+    #   kind: linux
+    #   image: alpine:latest
+    #   exec:
+    #     - ip addr add 100.64.2.2/24 dev eth1
+    #     - ip route delete default
+    #     - ip route add default via 100.64.2.1
+
+
+  links:
+    - endpoints: ["crpd1:eth1", "crpd2:eth1"]
+    # - endpoints: ["crpd1:eth2", "user1:eth1"]
+    # - endpoints: ["crpd2:eth2", "user2:eth1"]
