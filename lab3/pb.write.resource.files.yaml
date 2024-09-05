@@ -5,7 +5,7 @@
 #   - 
 
 ---
-- name: Print Inventory Hosts
+- name: Write Robot Files
   hosts: all
   gather_facts: false
   tasks:

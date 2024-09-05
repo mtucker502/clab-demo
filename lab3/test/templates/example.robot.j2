@@ -39,10 +39,25 @@ clab Teardown
 	Device Close Connection	@{devices}
 
 *** Test Cases ***
-Gather Test Variables
+T1.1 Gather Test Variables
 	Log Variables
 
-Verify Configuration
+T1.2 Verify Configuration
 	FOR    ${dut}    IN    @{devices}
 	    Get configuration    ${dut}
+	END
+
+# T1.3 CHECK NO CORE DUMPS
+# 	FOR    ${dut}    IN    @{devices}
+# 	    Check Core Dumps    ${dut}
+# 	END
+
+# T2.1 CHECK OSPF NEIGHBORS
+# 	FOR    ${dut}    IN    @{devices}
+# 	    Check OSPF neighbors    ${dut}    1
+# 	END
+
+T2.2 CHECK BGP NEIGHBORS
+	FOR    ${dut}    IN    @{devices}
+	    Check BGP neighbors    ${dut}    1
 	END
