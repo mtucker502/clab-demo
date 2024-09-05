@@ -1,0 +1,32 @@
+name: lab2
+
+topology:
+  nodes:
+    crpd:
+      kind: crpd
+      image: crpd:latest
+      license: license.txt
+      startup-config: crpd.conf
+      exec:
+        - ip addr add 100.64.101.1/24 dev eth1
+        - ip addr add 100.64.102.1/24 dev eth2
+        - ip addr add 192.168.100.100/32 dev lo
+    vmx1:
+      kind: vr-vmx
+      # image: vrnetlab/vr-vmx:20.2R1.10
+      image: vrnetlab/vr-vmx:22.4R1.10
+      ports: 
+        - 2201:22
+      startup-config: vmx1.set
+    vmx2:
+      kind: vr-vmx
+      # image: vrnetlab/vr-vmx:20.2R1.10
+      image: vrnetlab/vr-vmx:22.4R1.10
+      ports: 
+        - 2202:22
+      startup-config: vmx2.set
+
+  links:
+    - endpoints: ["vmx1:eth2", "vmx2:eth2"]
+    - endpoints: ["crpd:eth1", "vmx1:eth1"]
+    - endpoints: ["crpd:eth2", "vmx2:eth1"]
