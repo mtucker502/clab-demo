@@ -1,0 +1,79 @@
+#jinja2:lstrip_blocks: True
+## ********************************************************
+##
+## Project: nita
+##
+## Copyright (c) Juniper Networks, Inc., 2024. All rights reserved.
+##
+## Notice and Disclaimer: This code is licensed to you under the Apache 2.0 License (the "License"). You may not use this code except in compliance with the License. This code is not an official Juniper product. You can obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0.html
+##
+## SPDX-License-Identifier: Apache-2.0
+##
+## Third-Party Code: This code may depend on other components under separate copyright notice and license terms. Your use of the source code for those components is subject to the terms and conditions of the respective license as noted in the Third-Party source code file.
+##
+## ********************************************************
+*** Settings ***
+Documentation   A resource file with reusable keywords and variables
+# Variables 	${JUNIPER_COMMON}/variables_file/variables.py
+Resource 	${JUNIPER_COMMON}/resource_files/common.txt
+Resource 	${JUNIPER_COMMON}/resource_files/connectivity_resources.txt
+Resource 	${JUNIPER_COMMON}/resource_files/device_resources.txt
+Resource 	${JUNIPER_COMMON}/resource_files/show_cmd_keywords.txt
+Library           Process
+Library           String
+Library           SSHLibrary
+
+
+
+{% for device in groups.juniper_vsrx %}
+Library		${JUNIPER_COMMON}/libraries/pybot_jrouter.py     	user={{ hostvars[device].ansible_user }}	target={{ hostvars[device].ansible_host }}	password={{ hostvars[device].ansible_password }}       WITH NAME   {{ device | replace("-", "_") }}
+{% endfor %}
+
+*** Variables ***
+${JUNIPER_COMMON}=	/usr/share/nita-robot/robot-resources
+
+*** Keywords ***
+Verify Container Can Ping Target
+    [Documentation]    Executes a ping command in a specified Docker container and verifies success
+    [Arguments]    ${container_name}    ${target_ip}    ${ping_count}=4
+    
+    ${result}=    Run Process    docker    exec    -it    ${container_name}    sh    -c    ping -c ${ping_count} ${target_ip}
+    Log    ${result.stdout}
+    Log    ${result.stderr}
+    
+    # Verify command executed successfully
+    Should Be Equal As Integers    ${result.rc}    0    msg=Docker command failed with return code ${result.rc}
+    
+    # Check if ping was successful by looking for expected output patterns
+    Should Contain    ${result.stdout}    ${ping_count} packets transmitted
+    Should Contain    ${result.stdout}    ${ping_count} received
+    
+    # Extract and validate ping statistics
+    ${packet_loss}=    Get Regexp Matches    ${result.stdout}    (\\d+)% packet loss    1
+    Should Be Equal As Strings    ${packet_loss}[0]    0    msg=Expected 0% packet loss but got ${packet_loss}[0]%
+    
+    # Verify valid round-trip times are present
+    Should Match Regexp    ${result.stdout}    min/avg/max .* = [0-9.]+/[0-9.]+/[0-9.]+
+    
+    [Return]    ${result}
+
+Ping Test From Linux
+    [Documentation]    Reusable keyword that SSHs to a device and pings a target
+    [Arguments]    ${ssh_host}    ${ssh_username}    ${ssh_password}    ${target_ip}    ${ping_count}=4    ${timeout}=30s
+    
+    SSHLibrary.Open Connection    ${ssh_host}    timeout=${timeout}    prompt=$
+    Login    ${ssh_username}    ${ssh_password}
+    
+    ${ping_result}=    Execute Command    ping -c ${ping_count} ${target_ip}
+    Log    ${ping_result}
+    
+    # Verify ping was successful
+    Should Contain    ${ping_result}    ${ping_count} packets transmitted
+    Should Contain    ${ping_result}    ${ping_count} packets received
+    
+    # Extract and validate packet loss
+    ${packet_loss}=    Get Regexp Matches    ${ping_result}    (\\d+)% packet loss    1
+    Should Be Equal As Strings    ${packet_loss}[0]    0    msg=Expected 0% packet loss but got ${packet_loss}[0]%
+    
+    [Teardown]    SSHLibrary.Close Connection
+    [Return]    ${ping_result}

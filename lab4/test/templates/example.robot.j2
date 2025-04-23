@@ -1,0 +1,104 @@
+#jinja2:lstrip_blocks: True
+## ********************************************************
+##
+## Project: nita
+##
+## Copyright (c) Juniper Networks, Inc., 2024. All rights reserved.
+##
+## Notice and Disclaimer: This code is licensed to you under the Apache 2.0 License (the "License"). You may not use this code except in compliance with the License. This code is not an official Juniper product. You can obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0.html
+##
+## SPDX-License-Identifier: Apache-2.0
+##
+## Third-Party Code: This code may depend on other components under separate copyright notice and license terms. Your use of the source code for those components is subject to the terms and conditions of the respective license as noted in the Third-Party source code file.
+##
+## ********************************************************
+*** Settings ***
+Documentation     vSRX Test Cases
+
+Resource	${EXECDIR}/resource_files/resources.txt
+Resource	${JUNIPER_COMMON}/resource_files/connectivity_resources.txt
+Resource	${JUNIPER_COMMON}/resource_files/device_resources.txt
+
+Suite Setup    clab Setup
+Suite Teardown    clab Teardown
+
+*** Variables ***
+
+${output_directory}=	${CURDIR}
+${path}=	${CURDIR}
+
+*** Keywords ***
+clab Setup
+    Set Suite Variable    @{juniper_devices}
+	{% for device in groups.juniper_vsrx %}
+	    ...    {{ device | replace("-", "_") }}
+	{% endfor %}
+	Device Open Connection	@{juniper_devices}
+
+    Set Suite Variable    @{linux_devices}
+	{% for device in groups.linux %}
+	    ...    {{ device | replace("-", "_") }}
+	{% endfor %}
+
+clab Teardown
+	Device Close Connection	@{juniper_devices}
+
+*** Test Cases ***
+
+## Baseline
+T0 Gather Test Variables
+	Log Variables
+
+## System
+T1.1 Verify Version
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check JunOS Version    ${dut}    24.4R1.9
+	END
+
+T1.2 VERIFY CONFIGURATION
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Get configuration    ${dut}
+	END
+
+T1.3 CHECK NO CORE DUMPS
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check Core Dumps    ${dut}
+	END
+
+T1.4 CHECK NO CHASSIS ALARMS
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check No Chassis Alarms    ${dut}
+	END
+
+T1.5 CHECK NO SYSTEM ALARMS
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check No System Alarms    ${dut}
+	END
+
+T1.6 CHECK VERSION
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check Core Dumps    ${dut}
+	END
+
+## Hardware
+T2.1 Verify all FPC are online
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check FPC Is Online    ${dut}
+	END
+
+T3.1 CHECK OSPF NEIGHBORS
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check OSPF neighbors    ${dut}    1
+	END
+
+T3.2 CHECK BGP NEIGHBORS
+	FOR    ${dut}    IN    @{juniper_devices}
+	    Check BGP neighbors    ${dut}    1
+	END
+
+# Connectivity
+T4.1 PING FROM VSRX1 TO USER2
+    Ping Test From Device    clab_lab4_vsrx1    192.168.2.2
+
+T4.2 PING FROM USER1 TO USER2
+    Ping Test From Linux    {{ hostvars["clab-lab4-user1"].ansible_host }}    admin    admin@123    192.168.2.2

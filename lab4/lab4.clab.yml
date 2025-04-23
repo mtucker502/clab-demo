@@ -1,0 +1,43 @@
+name: lab4
+
+topology:
+  nodes:
+    vsrx1:
+      kind: juniper_vsrx
+      image: vrnetlab/juniper_vsrx:24.4R1.9
+      startup-config: vsrx1.conf
+    vsrx2:
+      kind: juniper_vsrx
+      image: vrnetlab/juniper_vsrx:24.4R1.9
+      startup-config: vsrx2.conf
+    user1:
+      kind: linux
+      image: lscr.io/linuxserver/openssh-server:latest
+      exec:
+        - ip addr add 192.168.1.2/24 dev eth1
+        - ip route delete default
+        - ip route add default via 192.168.1.1
+      env:
+        SUDO_ACCESS: true
+        PASSWORD_ACCESS: true
+        USER_NAME: admin
+        USER_PASSWORD: "admin@123"
+        LISTEN_PORT: 22
+    user2:
+      kind: linux
+      image: lscr.io/linuxserver/openssh-server:latest
+      exec:
+        - ip addr add 192.168.2.2/24 dev eth1
+        - ip route delete default
+        - ip route add default via 192.168.2.1
+      env:
+        SUDO_ACCESS: true
+        PASSWORD_ACCESS: true
+        USER_NAME: admin
+        USER_PASSWORD: "admin@123"
+        LISTEN_PORT: 22
+
+  links:
+    - endpoints: ["vsrx1:ge-0/0/0", "vsrx2:ge-0/0/0"]
+    - endpoints: ["vsrx1:ge-0/0/1", "user1:eth1"]
+    - endpoints: ["vsrx2:ge-0/0/1", "user2:eth1"]
